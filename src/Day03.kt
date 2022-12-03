@@ -34,20 +34,10 @@ fun findMisplacedItem(rucksack: String): Char? {
     return null
 }
 
-fun findBadge(group: List<String>): Char? {
-    val hash = hashMapOf<Char, Int>()
-    val temp = hashSetOf<Char>()
+fun findBadge(group: List<String>): Char? =
+    group.foldIndexed(hashMapOf<Char, MutableSet<Int>>()) { index, hash, rucksack ->
+        rucksack.filter { item -> hash[item]?.contains(index) != true }
+            .forEach { item -> hash.getOrPut(item) { mutableSetOf() }.run { add(index) } }
 
-    group.forEach { rucksack ->
-        temp.clear()
-        rucksack.forEach { item ->
-            if (!temp.contains(item)) {
-                temp.add(item)
-                hash[item] = hash.getOrDefault(item, 0) + 1
-            }
-        }
-    }
-
-
-    return hash.keys.find { hash[it] == 3 }
-}
+        hash
+    }.let { hash -> hash.keys.find { hash[it]?.size == 3 } }
