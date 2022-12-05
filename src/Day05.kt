@@ -14,13 +14,11 @@ fun main() {
         val (stacks, movementSet) = input.parse()
 
         movementSet.forEach { (amount, from, to) ->
-            (0 until amount).map { stacks[from]!!.removeLast() }.reversed()
-                .forEach { stacks[to]?.addLast(it) }
+            (0 until amount).map { stacks[from]!!.removeLast() }.reversed().forEach { stacks[to]?.addLast(it) }
         }
 
         return stacks.values.map(ArrayDeque<Char>::removeLast).joinToString("")
     }
-
 
     val input = readInput("Day05")
     println(part1(input))
@@ -33,22 +31,14 @@ private fun List<String>.parse(): Pair<Map<Int, ArrayDeque<Char>>, List<Triple<I
     return subList(0, index).getStacks() to subList(index + 2, size).getMovements()
 }
 
-private fun List<String>.getStacks(): Map<Int, ArrayDeque<Char>> {
-    val stacks = mutableMapOf<Int, ArrayDeque<Char>>()
-
-    reversed().map { it.drop(1).dropLast(1) }
-        .forEach { line ->
-            (line.indices step 4).asSequence()
-                .forEachIndexed { index, i ->
-                    line[i].takeUnless(Char::isWhitespace)?.let {
-                        stacks.getOrPut(index) { ArrayDeque() }.run { addLast(it) }
-                    }
-                }
-
-        }
-
-    return stacks
-}
+private fun List<String>.getStacks(): Map<Int, ArrayDeque<Char>> =
+    reversed().fold(mutableMapOf() ) { stacks, line ->
+        line.windowed(size = 3, step = 4, transform = { string -> string[1].toString() })
+            .forEachIndexed { index, cargo ->
+                cargo.takeUnless(String::isBlank)?.let { stacks.getOrPut(index) { ArrayDeque() }.run { addLast(it.single()) } }
+            }
+        stacks
+    }
 
 private fun List<String>.getMovements(): List<Triple<Int, Int, Int>> =
     map { line -> line.filter { char -> char.isDigit() || char.isWhitespace() }.split(" ").filter(String::isNotBlank) }
