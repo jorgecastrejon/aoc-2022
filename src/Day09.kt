@@ -5,111 +5,13 @@ fun main() {
     fun part1(input: List<String>): Int {
         val moves = input.map { move -> move.split(" ").let { it.first() to it.last().toInt() } }
 
-        var head = 0 to 0
-        var tail = 0 to 0
-        val visitedPosition = mutableSetOf(head)
-
-        for (move in moves) {
-            when (move.first) {
-                "R" -> repeat(move.second) {
-                    head = head.first + 1 to head.second
-                    tail = tail follows head
-                    visitedPosition.add(tail)
-                }
-                "U" -> repeat(move.second) {
-                    head = head.first to head.second - 1
-                    tail = tail follows head
-                    visitedPosition.add(tail)
-
-                }
-                "L" -> repeat(move.second) {
-                    head = head.first - 1 to head.second
-                    tail = tail follows head
-                    visitedPosition.add(tail)
-
-                }
-                else -> repeat(move.second) {
-                    head = head.first to head.second + 1
-                    tail = tail follows head
-                    visitedPosition.add(tail)
-                }
-            }
-        }
-
-        return visitedPosition.size
+        return moves.resolve(chainLength = 2).size
     }
 
     fun part2(input: List<String>): Int {
         val moves = input.map { move -> move.split(" ").let { it.first() to it.last().toInt() } }
 
-        var head = 0 to 0
-        var nodes = Array(9) { (0 to 0) }
-        val visitedPosition = mutableSetOf(head)
-
-        for (move in moves) {
-            when (move.first) {
-                "R" -> repeat(move.second) {
-                    head = head.first + 1 to head.second
-
-                    for (i in nodes.indices) {
-                        if (i == 0) {
-                            nodes[i] = nodes[i] follows head
-                        } else {
-                            nodes[i] = nodes[i] follows nodes[i - 1]
-                        }
-
-                        if (i == nodes.lastIndex) {
-                            visitedPosition.add(nodes[i])
-                        }
-                    }
-                }
-                "U" -> repeat(move.second) {
-                    head = head.first to head.second + 1
-                    for (i in nodes.indices) {
-                        if (i == 0) {
-                            nodes[i] = nodes[i] follows head
-                        } else {
-                            nodes[i] = nodes[i] follows nodes[i - 1]
-                        }
-
-                        if (i == nodes.lastIndex) {
-                            visitedPosition.add(nodes[i])
-                        }
-                    }
-                }
-                "L" -> repeat(move.second) {
-                    head = head.first - 1 to head.second
-                    for (i in nodes.indices) {
-                        if (i == 0) {
-                            nodes[i] = nodes[i] follows head
-                        } else {
-                            nodes[i] = nodes[i] follows nodes[i - 1]
-                        }
-
-                        if (i == nodes.lastIndex) {
-                            visitedPosition.add(nodes[i])
-                        }
-                    }
-
-                }
-                else -> repeat(move.second) {
-                    head = head.first to head.second - 1
-                    for (i in nodes.indices) {
-                        if (i == 0) {
-                            nodes[i] = nodes[i] follows head
-                        } else {
-                            nodes[i] = nodes[i] follows nodes[i - 1]
-                        }
-
-                        if (i == nodes.lastIndex) {
-                            visitedPosition.add(nodes[i])
-                        }
-                    }
-                }
-            }
-        }
-
-        return visitedPosition.size
+        return moves.resolve(chainLength = 10).size
     }
 
     val input = readInput("Day09")
@@ -118,15 +20,38 @@ fun main() {
     println(part2(input))
 }
 
-private infix fun Pair<Int, Int>.follows(head: Pair<Int, Int>): Pair<Int, Int> {
-    val dx = head.first - this.first
-    val dy = head.second - this.second
+
+fun List<Pair<String, Int>>.resolve(chainLength: Int): Set<PointXY> =
+    fold(Array(chainLength) { PointXY() } to mutableSetOf(PointXY())) { (chain, visitedPosition), (dir, amount) ->
+        repeat(amount) { chain.move(dir).also { visitedPosition.add(it.last()) } }
+
+        chain to visitedPosition
+    }.second
+
+
+private fun Array<PointXY>.move(dir: String): Array<PointXY> {
+    val diff = when (dir) {
+        "R" -> 1 to 0
+        "L" -> -1 to 0
+        "U" -> 0 to -1
+        else -> 0 to 1
+    }
+    this[0] = get(0).plus(x = diff.first, y = diff.second)
+
+    for (i in 1 until this.size) {
+        this[i] = get(i) follows this[i - 1]
+    }
+
+    return this
+}
+
+private infix fun PointXY.follows(head: PointXY): PointXY {
+    val dx = head.x - this.x
+    val dy = head.y - this.y
 
     return if (abs(dx) <= 1 && abs(dy) <= 1) {
         this
     } else {
-        val y = if (abs(dy) > 1) dy / 2 else dy
-        val x = if (abs(dx) > 1) dx / 2 else dx
-        this.first + x to this.second + y
+        plus(x = if (abs(dx) > 1) dx / 2 else dx, y = if (abs(dy) > 1) dy / 2 else dy)
     }
 }
